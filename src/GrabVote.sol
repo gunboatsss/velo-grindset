@@ -52,21 +52,23 @@ contract GrabVote {
         return rewards;
     }
     function getRewards(uint256 _tokenId, address _bribe) internal {
+        address owner = veNFT.ownerOf(_tokenId);
         Bribe bribe = Bribe(_bribe);
         address[] memory rewards = getRewardsArray(_bribe);
         bribe.getReward(_tokenId, rewards);
+        for (uint i = 0; i < rewards.length; i++) {
+            IERC20 token = IERC20(rewards[i]);
+            token.transfer(owner, token.balanceOf(this.address));
+        }
     }
     function claim(uint256 _tokenId) external {
-        address owner = veNFT.ownerOf(_tokenId);
+        mapping (address => bool) trackedToken;
+        address[]
         (address[] memory internalBribes, address[] memory externalBribes) = getPoolVotes(_tokenId);
         for(uint256 i = 0; i < internalBribes.length; i++) {
             if (internalBribes[i] == address(0)) break;
             getRewards(_tokenId, internalBribes[i]);
-            IERC20 ib = IERC20(internalBribes[i]);
-            ib.transfer(owner, ib.balanceOf(this.address));
             getRewards(_tokenId, externalBribes[i]);
-            IERC20 eb = IERC20(externalBribes[i]);
-            eb.transfer(owner, eb.balanceOf(this.address));
         }
     }
 }
