@@ -3,13 +3,15 @@ pragma solidity ^0.8.17;
 import "./interface/Bribe.sol";
 import "./interface/Voter.sol";
 import "./interface/WrappedExternalBribeFactory.sol";
+import "openzeppelin-contracts/contracts/token/IERC20.sol";
+import "openzeppelin-contracts/contracts/token/IERC721.sol";
 
 contract GrabVote {
     uint256 constant MAX_PAIRS = 30;
     Voter constant voter = Voter(0x09236cfF45047DBee6B921e00704bed6D6B8Cf7e);
     WrappedExternalBribeFactory constant WEBF =
         WrappedExternalBribeFactory(0xFC1AA395EBd27664B11fC093C07E10FF00f0122C);
-
+    IERC721 constant veNFT = IERC721(0x9c7305eb78a432ced5C4D14Cac27E8Ed569A2e26);
     function getPoolVotes(
         uint256 _tokenId
     )
@@ -55,11 +57,16 @@ contract GrabVote {
         bribe.getReward(_tokenId, rewards);
     }
     function claim(uint256 _tokenId) external {
+        address owner = veNFT.ownerOf(_tokenId);
         (address[] memory internalBribes, address[] memory externalBribes) = getPoolVotes(_tokenId);
         for(uint256 i = 0; i < internalBribes.length; i++) {
             if (internalBribes[i] == address(0)) break;
             getRewards(_tokenId, internalBribes[i]);
+            IERC20 ib = IERC20(internalBribes[i]);
+            ib.transfer(owner, ib.balanceOf(this.address));
             getRewards(_tokenId, externalBribes[i]);
+            IERC20 eb = IERC20(externalBribes[i]);
+            eb.transfer(owner, eb.balanceOf(this.address));
         }
     }
 }
