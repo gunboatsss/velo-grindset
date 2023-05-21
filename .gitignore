@@ -1,5 +1,7 @@
 # Compiler files
+artifacts/
 cache/
+cache_hardhat/
 out/
 
 # Ignores development broadcast logs
@@ -12,3 +14,4 @@ docs/
 
 # Dotenv file
 .env
+node_modules

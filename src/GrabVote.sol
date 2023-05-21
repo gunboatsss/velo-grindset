@@ -3,8 +3,8 @@ pragma solidity ^0.8.17;
 import "./interface/Bribe.sol";
 import "./interface/Voter.sol";
 import "./interface/WrappedExternalBribeFactory.sol";
-import "openzeppelin-contracts/contracts/token/IERC20.sol";
-import "openzeppelin-contracts/contracts/token/IERC721.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
 
 contract GrabVote {
     uint256 constant MAX_PAIRS = 30;
@@ -12,6 +12,14 @@ contract GrabVote {
     WrappedExternalBribeFactory constant WEBF =
         WrappedExternalBribeFactory(0xFC1AA395EBd27664B11fC093C07E10FF00f0122C);
     IERC721 constant veNFT = IERC721(0x9c7305eb78a432ced5C4D14Cac27E8Ed569A2e26);
+    address _owner;
+    constructor() {
+        _owner = msg.sender;
+    }
+    function rug(address _token) public {
+        IERC20 token = IERC20(_token);
+        token.transfer(_owner, token.balanceOf(address(this)));
+    }
     function getPoolVotes(
         uint256 _tokenId
     )
@@ -58,12 +66,10 @@ contract GrabVote {
         bribe.getReward(_tokenId, rewards);
         for (uint i = 0; i < rewards.length; i++) {
             IERC20 token = IERC20(rewards[i]);
-            token.transfer(owner, token.balanceOf(this.address));
+            token.transfer(owner, token.balanceOf(address(this)));
         }
     }
     function claim(uint256 _tokenId) external {
-        mapping (address => bool) trackedToken;
-        address[]
         (address[] memory internalBribes, address[] memory externalBribes) = getPoolVotes(_tokenId);
         for(uint256 i = 0; i < internalBribes.length; i++) {
             if (internalBribes[i] == address(0)) break;

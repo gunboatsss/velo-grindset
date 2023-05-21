@@ -2,10 +2,12 @@ pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
 import "../src/GrabVote.sol";
+import "../src/GrabVoteWithMsgValue.sol";
 import "../src/interface/VotingEscrow.sol";
 import {IERC20Metadata as ERC20} from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-contract GrabVoteTest is Test {
+contract GrabVoteWithMsgValueTest is Test {
+    GrabVoteWithMsgValue public gvwmv;
     GrabVote public gv;
     string OPTIMISM_RPC = vm.envString("OPTIMISM_RPC");
     uint256 optimismFork;
@@ -15,13 +17,7 @@ contract GrabVoteTest is Test {
     function setUp() public {
         optimismFork = vm.createSelectFork(OPTIMISM_RPC, 99589740);
         gv = new GrabVote();
-    }
-    function testGetPoolVotes() public view {
-        (address[] memory i, address[] memory e) = gv.getPoolVotes(63);
-        for(uint j = 0; j < i.length; j++) {
-            if(i[j] != address(0)) {console.log("internal ", i[j]);
-            console.log("external ", e[j]);}
-        }
+        gvwmv = new GrabVoteWithMsgValue();
     }
     function testClaim() public {
         VotingEscrow veNFT = VotingEscrow(0x9c7305eb78a432ced5C4D14Cac27E8Ed569A2e26);
@@ -52,13 +48,16 @@ contract GrabVoteTest is Test {
             balanceBefore[tokens[j]] = token.balanceOf(owner);
         }
         vm.prank(owner);
-        veNFT.approve(address(gv), 63);
-        gv.claim(63);
+        veNFT.approve(address(gvwmv), 63);
+        (bool succ, bytes memory reason) = address(gvwmv).call{value: 63}("");
+        console.log(string(reason));
+        assertTrue(succ);
         for (uint j = 0; j < tokens.length; j++) {
             ERC20 token = ERC20(tokens[j]);
-            console.log(string.concat(token.symbol(), " balance before: ") , balanceBefore[tokens[j]], "balance after: ", token.balanceOf(owner));
+            console.log(string.concat(token.symbol(), " balance before: "), balanceBefore[tokens[j]], "balance after: ", token.balanceOf(owner));
             //assertGt(token.balanceOf(owner), balanceBefore[tokens[j]]);
-            assertTrue(token.balanceOf(address(gv)) == 0);
+            assertTrue(token.balanceOf(address(gvwmv)) == 0);
+            assertTrue(address(gvwmv).balance == 0);
         }
     }
 }

@@ -1,0 +1,4 @@
+GrabVoteTest:testClaim() (gas: 5889891)
+GrabVoteTest:testGetPoolVotes() (gas: 108936)
+GrabVoteWithMsgValueTest:testClaim() (gas: 5780224)
+TestCalldataTest:testOneByte() (gas: 9376)
