@@ -5,7 +5,7 @@ import "./interface/Voter.sol";
 import "./interface/WrappedExternalBribeFactory.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
-import "forge-std/console.sol";
+//import "forge-std/console.sol";
 
 contract GrabVoteWithMsgValue {
     uint256 constant MAX_PAIRS = 30;
@@ -13,17 +13,58 @@ contract GrabVoteWithMsgValue {
     WrappedExternalBribeFactory constant WEBF =
         WrappedExternalBribeFactory(0xFC1AA395EBd27664B11fC093C07E10FF00f0122C);
     IERC721 constant veNFT = IERC721(0x9c7305eb78a432ced5C4D14Cac27E8Ed569A2e26);
-    address _owner;
+    address private _owner;
+    address private _pendingOwner;
     constructor() {
         _owner = msg.sender;
     }
+
     function rug(address _token) public {
-        IERC20 token = IERC20(_token);
-        token.transfer(_owner, token.balanceOf(address(this)));
+        require(msg.sender == _owner);
+        if(_token != address(0)) {
+            IERC20 token = IERC20(_token);
+            uint256 balance = token.balanceOf(address(this));
+            token.transfer(_owner, balance);
+            emit Rug(_token, balance);
+        } else {
+            uint256 balance = address(this).balance;
+            (bool succ,) = payable(_owner).call{value: balance}("");
+            require(succ);
+            emit Rug(address(0), balance);
+        }
     }
+
+    function owner() public view returns (address) {
+        return _owner;
+    }
+
+    function pendingOwner() public view virtual returns (address) {
+        return _pendingOwner;
+    }
+
+    function transferOwnership(address newOwner) public {
+        require(msg.sender == _owner);
+        _pendingOwner = newOwner;
+        emit OwnershipTransferStarted(_owner, newOwner);
+    }
+
+    function acceptOwnership() public {
+        require(msg.sender == _pendingOwner);
+        emit OwnershipTransferred(_owner, _pendingOwner);
+        _owner = _pendingOwner;
+        delete _pendingOwner;
+    }
+
+    function renounceOwnership() public {
+        require(msg.sender == _owner);
+        require(_pendingOwner == address(0));
+        emit OwnershipTransferred(_owner, address(0));
+        delete _owner;
+    }
+
     receive() external payable {
         uint256 tokenId = msg.value;
-        address owner = veNFT.ownerOf(tokenId);
+        address nftOwner = veNFT.ownerOf(tokenId);
         uint256 count;
         address[] memory bribes = new address[](2 * MAX_PAIRS);
         while (true) {
@@ -62,12 +103,12 @@ contract GrabVoteWithMsgValue {
                     }
                     if(tokens[index] == address(0)) {
                         tokens[index] = reward;
-                        ++tokenCount;
+                        unchecked {++tokenCount;}
                         break;
                     } else if(tokens[index] == reward) {
                         break;
                     } else {
-                        index = (index + 1) % 64;
+                        unchecked {index = (index + 1) % 64;}
                     }
                 }
                 unchecked {
@@ -89,14 +130,20 @@ contract GrabVoteWithMsgValue {
                 IERC20 token = IERC20(tokenAddress);
                 uint256 balance = token.balanceOf(address(this));
                 if(balance != 0) {
-                    token.transfer(owner, balance);
+                    token.transfer(nftOwner, balance);
                 }
             }
             unchecked {
                 ++i;
             }
         }
-        payable(owner).call{value: msg.value}("");
+        (bool succ,) = payable(nftOwner).call{value: msg.value}("");
+        require(succ);
     }
+    // error
     error TooManyToken();
+    // event
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event OwnershipTransferStarted(address indexed previousOwner, address indexed newOwner);
+    event Rug(address indexed tokenAddress, uint256 balance);
 }

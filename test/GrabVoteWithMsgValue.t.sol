@@ -4,6 +4,7 @@ import "forge-std/Test.sol";
 import "../src/GrabVote.sol";
 import "../src/GrabVoteWithMsgValue.sol";
 import "../src/interface/VotingEscrow.sol";
+import "forge-std/StdUtils.sol";
 import {IERC20Metadata as ERC20} from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 contract GrabVoteWithMsgValueTest is Test {
@@ -59,5 +60,28 @@ contract GrabVoteWithMsgValueTest is Test {
             assertTrue(token.balanceOf(address(gvwmv)) == 0);
             assertTrue(address(gvwmv).balance == 0);
         }
+    }
+    function testOwnership() public {
+        address dai = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
+        deal(dai, address(gvwmv), 69e18);
+        vm.startPrank(address(1));
+        vm.expectRevert();
+        gvwmv.rug(dai);
+        vm.expectRevert();
+        gvwmv.transferOwnership(address(2));
+        vm.expectRevert();
+        gvwmv.acceptOwnership();
+        vm.expectRevert();
+        gvwmv.renounceOwnership();
+        vm.stopPrank();
+        gvwmv.rug(dai);
+        assertTrue(IERC20(dai).balanceOf(address(gvwmv)) == 0);
+        gvwmv.transferOwnership(address(2));
+        vm.startPrank(address(2));
+        gvwmv.acceptOwnership();
+        assertTrue(gvwmv.owner() == address(2));
+        assertTrue(gvwmv.pendingOwner() == address(0));
+        gvwmv.renounceOwnership();
+        assertTrue(gvwmv.owner() == address(0));
     }
 }
