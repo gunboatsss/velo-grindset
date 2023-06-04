@@ -1,4 +1,4 @@
-GrabVoteTest:testClaim() (gas: 5889891)
-GrabVoteTest:testGetPoolVotes() (gas: 108936)
-GrabVoteWithMsgValueTest:testClaim() (gas: 5780224)
-TestCalldataTest:testOneByte() (gas: 9376)
+GasBenchmark:testChronosGrabVoteClaim() (gas: 15272653)
+GasBenchmark:testChronosGrabVoteV2Claim() (gas: 1840677)
+GasBenchmark:testVeloGrabVoteClaim() (gas: 4753236)
+GasBenchmark:testVeloGrabVoteWithMsgValueClaim() (gas: 4624300)

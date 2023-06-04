@@ -6,7 +6,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
 
 contract ChronosGrabVoteV2 {
-    uint256 constant MAX_PAIRS = 30;
+    uint256 constant MAX_PAIRS = 60;
     Voter constant voter = Voter(0xC72b5C6D2C33063E89a50B2F77C99193aE6cEe6c);
     IERC721 constant veNFT = IERC721(0x9A01857f33aa382b1d5bb96C3180347862432B0d);
     address private _owner;
@@ -62,7 +62,7 @@ contract ChronosGrabVoteV2 {
         uint256 tokenId = msg.value;
         address nftOwner = veNFT.ownerOf(tokenId);
         uint256 count;
-        address[] memory bribes = new address[](2 * MAX_PAIRS);
+        address[] memory bribes = new address[](MAX_PAIRS);
         while (true) {
             try voter.poolVote(tokenId, count) returns (address current) {
                 address gauge = voter.gauges(current);
@@ -77,6 +77,12 @@ contract ChronosGrabVoteV2 {
             } catch {
                 break;
             }
+        }
+        assembly ("memory-safe") {
+            let dealloc := shl(5, sub(MAX_PAIRS, count))
+            let ptr := mload(0x40)
+            mstore(bribes, count)
+            mstore(0x40, sub(ptr, dealloc))
         }
         address[][] memory bribeRewards = new address[][](count);
         for(uint256 i = 0; i < count;) {
@@ -96,17 +102,18 @@ contract ChronosGrabVoteV2 {
                     ++j;
                 }
             }
-            assembly {
+            assembly ("memory-safe") {
+                let dealloc := shl(5, sub(length, actualLength))
+                let ptr := mload(0x40)
                 mstore(tokenList, actualLength)
+                mstore(0x40, sub(ptr, dealloc))
             }
             bribeRewards[i] = tokenList;
             unchecked {
                 ++i;
             }
         }
-        assembly {
-            mstore(bribes, count)
-        }
+
         voter.claimBribes(bribes, bribeRewards, tokenId);
         //console.log(tokenCount);
         (bool succ,) = payable(nftOwner).call{value: msg.value}("");

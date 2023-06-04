@@ -29,8 +29,8 @@ contract GasBenchmark is Test {
         grabVote = new GrabVote();
         grabVoteWithMsgValue = new GrabVoteWithMsgValue();
         vm.startPrank(owner);
-        velodrome.approve(address(grabVote), velodromeNftId);
-        velodrome.approve(address(grabVoteWithMsgValue), velodromeNftId);
+        velodrome.setApprovalForAll(address(grabVote), true);
+        velodrome.setApprovalForAll(address(grabVoteWithMsgValue), true);
         vm.stopPrank();
         arbitrumOne = vm.createSelectFork(ARB1_RPC, arbitrumBlockToFork);
         chronos = VotingEscrow(0x9A01857f33aa382b1d5bb96C3180347862432B0d);
@@ -38,8 +38,8 @@ contract GasBenchmark is Test {
         chronosGrabVoteV2 = new ChronosGrabVoteV2();
         chronosGrabVote = new ChronosGrabVote();
         vm.startPrank(owner);
-        chronos.approve(address(chronosGrabVote), chronosNftId);
-        chronos.approve(address(chronosGrabVoteV2), chronosNftId);
+        chronos.setApprovalForAll(address(chronosGrabVote), true);
+        chronos.setApprovalForAll(address(chronosGrabVoteV2), true);
         vm.stopPrank();
     }
     function testVeloGrabVoteClaim() public {
